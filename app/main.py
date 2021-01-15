@@ -55,21 +55,29 @@ async def get_link(message: types.Message):
     clients.append(message.chat.id)
 
     async with aiohttp.ClientSession() as session:
-        await message.answer('1/4. Скачиваю видео...')
-        async with session.get(link_video) as resp:
+
+        await message.answer('1/4. Скачиваю аудио...')
+        async with session.get(link_audio) as resp:
             if resp.status == 200:
-                video_file = tempfile.NamedTemporaryFile(suffix='.webm')
-                video_file.write(await resp.read())
+                audio_file = tempfile.NamedTemporaryFile(suffix='.webm')
+                audio_file.write(await resp.read())
             else:
                 await message.answer('Что-то пошло не так :(')
                 clients.remove(message.chat.id)
                 return
 
-        await message.answer('2/4. Скачиваю аудио...')
-        async with session.get(link_audio) as resp:
+        await message.answer('2/4. Скачиваю видео...')
+        async with session.get(link_video) as resp:
             if resp.status == 200:
-                audio_file = tempfile.NamedTemporaryFile(suffix='.webm')
-                audio_file.write(await resp.read())
+                video_file = tempfile.NamedTemporaryFile(suffix='.webm')
+                video_file.write(await resp.read())
+            elif resp.status == 404:
+                output_file = await aiofiles.open(audio_file.name, 'rb')
+                await message.answer_video(await output_file.read(), supports_streaming=True)
+                await output_file.close()
+                await message.answer('Готово!')
+                clients.remove(message.chat.id)
+                return
             else:
                 await message.answer('Что-то пошло не так :(')
                 clients.remove(message.chat.id)
